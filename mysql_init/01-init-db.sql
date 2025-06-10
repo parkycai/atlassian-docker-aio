@@ -1,0 +1,3 @@
+CREATE DATABASE IF NOT EXISTS `jira`;
+CREATE DATABASE IF NOT EXISTS `confluence`;
+GRANT ALL ON *.* TO 'atlassian'@'%';
