@@ -12,5 +12,5 @@ java -jar /var/agent/atlassian-agent.jar -d -m {your_mail} -n {your_name} -o {yo
 Jira：jira
 Confluence: conf
 Bitbucket: stash
-其他三方插件：在plungin管理中查看应用key
+其他三方插件：在plugin管理中查看应用key
 ```
