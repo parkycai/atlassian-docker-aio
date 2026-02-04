@@ -1,26 +1,30 @@
 services:
-   jira:
-     image: atlassian/jira-software:10.3
-     container_name: jira-srv
-     environment:
-       - JAVA_OPTS=-javaagent:/var/agent/atlassian-agent.jar 
-       - AGENT_PATH=/var/agent
-       - AGENT_FILENAME=atlassian-agent.jar
-       - TZ=Asia/Shanghai
- #      - JVM_MINIMUM_MEMORY=1g
- #      - JVM_MAXIMUM_MEMORY=8g
- #      - JVM_CODE_CACHE_ARGS='-XX:InitialCodeCacheSize=1g -XX:ReservedCodeCacheSize=4g'
-     depends_on:
-       - mysql
-     ports:
-       - "8080:8080"
-     volumes:
-       - ./jira_home:/var/atlassian/application-data/jira
-       - ./agent.jar:/var/agent/atlassian-agent.jar
-       - ./mysql-connector-java-8.0.22.jar:/opt/atlassian/jira/lib/mysql-connector-java-8.0.22.jar
-     restart: always
-     networks:
-       - network-bridge
+  jira:
+    image: atlassian/jira-software:10.3
+    container_name: jira-srv
+    environment:
+      - JAVA_OPTS=-javaagent:/var/agent/atlassian-agent.jar 
+      - AGENT_PATH=/var/agent
+      - AGENT_FILENAME=atlassian-agent.jar
+      - TZ=Asia/Shanghai
+      - JVM_SUPPORT_RECOMMENDED_ARGS=-Djira.downgrade.allowed=true -Dupm.plugin.upload.enabled=true
+      - JVM_MINIMUM_MEMORY=4g
+      - JVM_MAXIMUM_MEMORY=16g
+#      - JVM_CODE_CACHE_ARGS='-XX:InitialCodeCacheSize=1g -XX:ReservedCodeCacheSize=4g'
+    depends_on:
+      - mysql
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./jira_home:/var/atlassian/application-data/jira
+      - ./agent.jar:/var/agent/atlassian-agent.jar:ro
+      - ./mysql-connector-j-8.0.33.jar:/opt/atlassian/jira/lib/mysql-connector-j-8.0.33.jar
+      - ./fonts:/usr/share/fonts/extra:ro
+      - ./fonts_local.conf:/etc/fonts/local.conf:ro
+      - ./jira_server.xml:/opt/atlassian/jira/conf/server.xml:ro
+    restart: always
+    networks:
+      - network-bridge
 
   confluence:
     image: atlassian/confluence:9.2
@@ -30,8 +34,8 @@ services:
       - AGENT_PATH=/var/agent
       - AGENT_FILENAME=atlassian-agent.jar
       - TZ=Asia/Shanghai
-#      - JVM_MINIMUM_MEMORY=1g
-#      - JVM_MAXIMUM_MEMORY=8g
+      - JVM_MINIMUM_MEMORY=4g
+      - JVM_MAXIMUM_MEMORY=12g
 #      - JVM_CODE_CACHE_ARGS='-XX:InitialCodeCacheSize=1g -XX:ReservedCodeCacheSize=4g'
     depends_on:
       - mysql
@@ -39,67 +43,90 @@ services:
       - "8090:8090"
     volumes:
       - ./confluence_home:/var/atlassian/application-data/confluence
-      - ./agent.jar:/var/agent/atlassian-agent.jar
-      - ./mysql-connector-java-8.0.22.jar:/opt/atlassian/confluence/lib/mysql-connector-java-8.0.22.jar
+      - ./agent.jar:/var/agent/atlassian-agent.jar:ro
+      - ./mysql-connector-j-8.0.33.jar:/opt/atlassian/confluence/lib/mysql-connector-j-8.0.33.jar
       - ./confluence_server.xml:/opt/atlassian/confluence/conf/server.xml:ro
-      
+      - ./fonts:/usr/share/fonts/extra:ro
+      - ./fonts_local.conf:/etc/fonts/local.conf:ro
     restart: always
     networks:
       - network-bridge
 
-   bitbucket:
-     image: atlassian/bitbucket:9.4
-     container_name: bitbucket-srv
-     environment:
-       - JAVA_OPTS=-javaagent:/var/agent/atlassian-agent.jar 
-       - AGENT_PATH=/var/agent
-       - AGENT_FILENAME=atlassian-agent.jar
-       - TZ=Asia/Shanghai
- #      - JVM_MINIMUM_MEMORY=1g
- #      - JVM_MAXIMUM_MEMORY=8g
- #      - JVM_CODE_CACHE_ARGS='-XX:InitialCodeCacheSize=1g -XX:ReservedCodeCacheSize=4g'
-       - JDBC_DRIVER=org.postgresql.Driver
-       - JDBC_URL=jdbc:postgresql://postgres-bitbucket:5432/bitbucket
-       - JDBC_USER=atlassian
-       - JDBC_PASSWORD=123123
-     depends_on:
-       - postgres
-     ports:
-       - "7990:7990"
-     volumes:
-       - ./bitbucket_home:/var/atlassian/application-data/bitbucket
-       - ./agent-for-bitbucket.jar:/var/agent/atlassian-agent.jar
-       - ./mysql-connector-java-8.0.22.jar:/opt/atlassian/bitbucket/lib/mysql-connector-java-8.0.22.jar
-     restart: always
-     networks:
-       - network-bridge
+  bitbucket:
+    image: atlassian/bitbucket:9.4
+    container_name: bitbucket-srv
+    environment:
+      - JAVA_OPTS=-javaagent:/var/agent/atlassian-agent.jar 
+      - AGENT_PATH=/var/agent
+      - AGENT_FILENAME=atlassian-agent.jar
+      - TZ=Asia/Shanghai
+      - JVM_MINIMUM_MEMORY=4g
+      - JVM_MAXIMUM_MEMORY=8g
+#      - JVM_CODE_CACHE_ARGS='-XX:InitialCodeCacheSize=1g -XX:ReservedCodeCacheSize=4g'
+      - JDBC_DRIVER=org.postgresql.Driver
+      - JDBC_URL=jdbc:postgresql://postgres-bitbucket:5432/bitbucket
+      - JDBC_USER=atlassian
+      - JDBC_PASSWORD=123123
+    depends_on:
+      - postgres
+    ports:
+      - "7990:7990"
+    volumes:
+      - ./bitbucket_home:/var/atlassian/application-data/bitbucket
+      - ./bitbucket_shared:/var/atlassian/application-data/bitbucket/shared
+      - ./agent-for-bitbucket.jar:/var/agent/atlassian-agent.jar
+#      - ./mysql-connector-j-8.0.33.jar:/opt/atlassian/bitbucket/lib/mysql-connector-j-8.0.33.jar
+    restart: always
+    networks:
+      - network-bridge
 
-   postgres:
-     image: postgres:17
-     container_name: postgres-bitbucket
-     environment:
-       - POSTGRES_DB=bitbucket
-       - POSTGRES_USER=atlassian
-       - POSTGRES_PASSWORD=123123
-     volumes:
-       - ./postgres_data:/var/lib/postgresql/data
-     restart: always
-#     ports:
-#       - "5432:5432"
-     networks:
-       - network-bridge
-
+  postgres:
+    image: postgres:17
+    container_name: postgres-bitbucket
+    environment:
+      - POSTGRES_DB=bitbucket
+      - POSTGRES_USER=atlassian
+      - POSTGRES_PASSWORD=123123
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    restart: always
+#    ports:
+#      - "5432:5432"
+    networks:
+      - network-bridge
+  crowd:
+    image: atlassian/crowd:6.3
+    container_name: crowd-srv
+    environment:
+      - JAVA_OPTS=-javaagent:/var/agent/atlassian-agent.jar 
+      - AGENT_PATH=/var/agent
+      - AGENT_FILENAME=atlassian-agent.jar
+      - TZ=Asia/Shanghai
+    depends_on:
+      - mysql
+    ports:
+      - "8095:8095"
+    volumes:
+      - ./crowd_home:/var/atlassian/application-data/crowd
+      - ./agent.jar:/var/agent/atlassian-agent.jar
+      - ./mysql-connector-j-8.0.33.jar:/opt/atlassian/crowd/crowd-webapp/WEB-INF/lib/mysql-connector-j-8.0.33.jar
+      - ./crowd_server.xml:/opt/atlassian/crowd/apache-tomcat/conf/server.xml:ro
+    restart: always
+    networks:
+      - network-bridge
+      
   mysql:
     image: mysql:8.0
     container_name: mysql-atlassian
     environment:
       - TZ=Asia/Shanghai
+#      - MYSQL_DATABASE=jira
       - MYSQL_ROOT_PASSWORD=123456
       - MYSQL_USER=atlassian
       - MYSQL_PASSWORD=123123
     command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_bin','--transaction-isolation=READ-COMMITTED', '--innodb_log_file_size=256M', '--max_allowed_packet=256M','--log_bin_trust_function_creators=1']
 #    ports:
-#      - "13306:3306"
+#      - "3306:3306"
     volumes:
       - ./mysql_init:/docker-entrypoint-initdb.d
       - ./mysql_data:/var/lib/mysql
@@ -110,3 +137,7 @@ services:
 networks:
   network-bridge:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
+          gateway: 172.19.0.1
